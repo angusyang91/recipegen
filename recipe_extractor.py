@@ -290,8 +290,29 @@ IMPORTANT REQUIREMENTS:
             if not isinstance(recipe_data.get('applianceInstructions'), list):
                 recipe_data['applianceInstructions'] = []
             
-            print(f"✓ Successfully extracted: {recipe_data.get('recipeName', 'Unknown')}")
-            return recipe_data
+            # Ensure instructions is a list and not empty
+            if not isinstance(recipe_data.get('instructions'), list):
+                recipe_data['instructions'] = []
+            if len(recipe_data.get('instructions', [])) == 0:
+                print("⚠️  WARNING: No instructions extracted! This might indicate an issue with the prompt or API response.")
+            
+            # Transform to match frontend expectations
+            # Frontend expects: title, directions, ingredients
+            # Extractor returns: recipeName, instructions, ingredients
+            transformed_data = {
+                "title": recipe_data.get('recipeName') or recipe_data.get('title'),
+                "ingredients": recipe_data.get('ingredients', []),
+                "directions": recipe_data.get('instructions', []),  # Map instructions to directions
+                "recipeName": recipe_data.get('recipeName'),  # Keep for backwards compatibility
+                "instructions": recipe_data.get('instructions', []),  # Keep original field
+                "applianceInstructions": recipe_data.get('applianceInstructions', []),
+                "source_url": url  # Add source URL for frontend
+            }
+            
+            print(f"✓ Successfully extracted: {transformed_data.get('title', 'Unknown')}")
+            print(f"  - Ingredients: {len(transformed_data.get('ingredients', []))} items")
+            print(f"  - Directions: {len(transformed_data.get('directions', []))} steps")
+            return transformed_data
             
         except json.JSONDecodeError as e:
             print(f"JSON Parse Error. Response was: {response_text[:500]}")

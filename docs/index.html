@@ -432,9 +432,15 @@
         // For local development: uses window.location.origin
         // For GitHub Pages: create config.js with window.API_BASE_URL = 'your-backend-url'
         // For serverless functions: set to your function endpoint
-        const API_BASE_URL = (typeof window.API_BASE_URL !== 'undefined' && window.API_BASE_URL !== null) 
-            ? window.API_BASE_URL 
+        const API_BASE_URL = (typeof window.API_BASE_URL !== 'undefined' && window.API_BASE_URL !== null)
+            ? window.API_BASE_URL
             : window.location.origin;
+
+        // Debug logging
+        console.log('🔧 RecipeSnap Debug Info:');
+        console.log('  API_BASE_URL:', API_BASE_URL);
+        console.log('  window.API_BASE_URL:', window.API_BASE_URL);
+        console.log('  window.location.origin:', window.location.origin);
 
         const recipeUrlInput = document.getElementById('recipeUrl');
         const extractBtn = document.getElementById('extractBtn');
@@ -488,7 +494,10 @@
                 // Add timeout to prevent infinite loading
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
-                
+
+                console.log('🚀 Sending request to:', `${API_BASE_URL}/api/extract`);
+                console.log('📦 Request body:', { url: url });
+
                 const response = await fetch(`${API_BASE_URL}/api/extract`, {
                     method: 'POST',
                     headers: {
@@ -500,13 +509,17 @@
                 
                 clearTimeout(timeoutId);
 
+                console.log('✅ Response received:', response.status, response.statusText);
+
                 const data = await response.json();
+                console.log('📥 Response data:', data);
 
                 if (!response.ok || !data.success) {
                     throw new Error(data.error || 'Failed to extract recipe');
                 }
 
                 // Display recipe
+                console.log('🍳 Displaying recipe:', data.recipe?.title || 'Unknown');
                 displayRecipe(data.recipe);
 
             } catch (error) {
@@ -514,9 +527,7 @@
                 let errorMessage = error.message || 'An error occurred while extracting the recipe';
                 
                 // Provide more helpful error messages
-                if (error.name === 'AbortError' || error.message.includes('aborted')) {
-                    errorMessage = 'Request timed out. The recipe extraction is taking longer than expected. Please try again.';
-                } else if (error.message && error.message.includes('Failed to fetch')) {
+                if (error.message && error.message.includes('Failed to fetch')) {
                     errorMessage = 'Unable to connect to the API. The backend server may be starting up (this can take 30-60 seconds on free hosting). Please try again in a moment.';
                 } else if (error.message && error.message.includes('timeout')) {
                     errorMessage = 'Request timed out. The recipe extraction is taking longer than expected. Please try again.';

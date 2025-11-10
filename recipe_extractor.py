@@ -318,10 +318,13 @@ IMPORTANT REQUIREMENTS:
             print(f"JSON Parse Error. Response was: {response_text[:500]}")
             # Return empty structure instead of raising
             return {
+                "title": None,
                 "recipeName": None,
                 "ingredients": [],
+                "directions": [],
                 "instructions": [],
-                "applianceInstructions": []
+                "applianceInstructions": [],
+                "source_url": url
             }
         except Exception as e:
             print(f"AI extraction error: {str(e)}")

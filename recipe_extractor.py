@@ -55,6 +55,19 @@ class RecipeExtractor:
         """
         print(f"Extracting recipe from: {url}")
         
+        # Fetch the webpage content
+        try:
+            print("Fetching webpage content...")
+            page_response = requests.get(url, timeout=30, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            page_response.raise_for_status()
+            webpage_content = page_response.text
+            print(f"✓ Fetched {len(webpage_content)} characters from webpage")
+        except Exception as e:
+            print(f"Warning: Could not fetch webpage content: {e}")
+            webpage_content = None
+        
         # Prompt matching the Recipes repo approach
         appliance_prompt_section = """
 After extracting the main instructions, please analyze them.
@@ -64,9 +77,23 @@ After extracting the main instructions, please analyze them.
 If neither of these conditions are met, the "applianceInstructions" field MUST be an empty array [].
 """
 
-        prompt = f"""From the URL: {url}, extract the recipe name, the ingredients, and the primary cooking instructions.
+        if webpage_content:
+            # Include the webpage content in the prompt
+            prompt = f"""Extract the recipe information from the following webpage content.
+
+URL: {url}
+
+Webpage Content:
+{webpage_content[:50000]}
+
+CRITICAL: Extract ALL of the following:
+1. Recipe name/title
+2. Complete list of ingredients with measurements
+3. Complete step-by-step cooking instructions/directions
+
 {appliance_prompt_section}
-Ignore all non-recipe content like stories, ads, and comments.
+
+Ignore all non-recipe content like stories, ads, comments, and navigation elements.
 
 Return ONLY a valid JSON object with this exact structure:
 {{
@@ -89,11 +116,51 @@ Return ONLY a valid JSON object with this exact structure:
   ]
 }}
 
-Important:
+IMPORTANT REQUIREMENTS:
+- Extract ALL ingredients from the recipe - do not miss any
+- Extract ALL step-by-step instructions/directions - this is critical, include every step
 - Clean up and standardize ingredient measurements
-- Make instructions clear and actionable
-- Number the instructions if they aren't already numbered
+- Make instructions clear, actionable, and complete
+- Number the instructions if they aren't already numbered (Step 1, Step 2, etc.)
+- The "instructions" array MUST contain all cooking steps - do not leave it empty
 - Only include applianceInstructions if the recipe can be adapted for Instant Pot or Breville Smart Oven
+- Return ONLY valid JSON, no other text or explanation"""
+        else:
+            # Fallback if we can't fetch the content
+            prompt = f"""Extract the recipe information from this URL: {url}
+
+CRITICAL: Extract ALL of the following:
+1. Recipe name/title
+2. Complete list of ingredients with measurements
+3. Complete step-by-step cooking instructions/directions
+
+{appliance_prompt_section}
+
+Return ONLY a valid JSON object with this exact structure:
+{{
+  "recipeName": "Recipe Name",
+  "ingredients": [
+    "1 cup flour",
+    "2 eggs",
+    ...
+  ],
+  "instructions": [
+    "Step 1: ...",
+    "Step 2: ...",
+    ...
+  ],
+  "applianceInstructions": [
+    {{
+      "applianceName": "Instant Pot",
+      "instructions": ["Step 1: ...", "Step 2: ..."]
+    }}
+  ]
+}}
+
+IMPORTANT REQUIREMENTS:
+- Extract ALL ingredients from the recipe
+- Extract ALL step-by-step instructions/directions - include every single step
+- The "instructions" array MUST contain all cooking steps - do not leave it empty
 - Return ONLY valid JSON, no other text"""
 
         try:

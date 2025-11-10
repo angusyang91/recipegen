@@ -514,7 +514,9 @@
                 let errorMessage = error.message || 'An error occurred while extracting the recipe';
                 
                 // Provide more helpful error messages
-                if (error.message && error.message.includes('Failed to fetch')) {
+                if (error.name === 'AbortError' || error.message.includes('aborted')) {
+                    errorMessage = 'Request timed out. The recipe extraction is taking longer than expected. Please try again.';
+                } else if (error.message && error.message.includes('Failed to fetch')) {
                     errorMessage = 'Unable to connect to the API. The backend server may be starting up (this can take 30-60 seconds on free hosting). Please try again in a moment.';
                 } else if (error.message && error.message.includes('timeout')) {
                     errorMessage = 'Request timed out. The recipe extraction is taking longer than expected. Please try again.';

@@ -18,12 +18,12 @@ git push origin main
 4. **Connect GitHub**:
    - Click "Connect GitHub"
    - Authorize Render
-   - Select repository: `angusyang91/portfolio`
+   - Select repository: `angusyang91/recipegen`
 5. **Configure Service**:
    - **Name**: `recipesnap-api` (or any name you like)
    - **Region**: Choose closest to you (Oregon is default)
    - **Branch**: `main`
-   - **Root Directory**: `recipes` ⚠️ **IMPORTANT: Set this to `recipes`**
+   - **Root Directory**: Leave **BLANK** (app is at repository root)
    - **Runtime**: `Python 3`
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `python app.py`
@@ -41,7 +41,7 @@ git push origin main
 Once you have your Render URL, create the config file:
 
 ```bash
-cd /Users/angus/Desktop/ghrepo/portfolio/recipes/static
+cd /Users/angus/Desktop/ghrepo/recipegen/static
 echo "window.API_BASE_URL = 'https://YOUR-RENDER-URL.onrender.com';" > config.js
 ```
 
@@ -50,25 +50,25 @@ Replace `YOUR-RENDER-URL` with your actual Render service URL.
 ### Step 4: Push Config and Enable GitHub Pages
 
 ```bash
-cd /Users/angus/Desktop/ghrepo/portfolio
-git add recipes/static/config.js
+cd /Users/angus/Desktop/ghrepo/recipegen
+git add static/config.js
 git commit -m "Add API config for GitHub Pages"
 git push origin main
 ```
 
 Then enable GitHub Pages:
-1. Go to https://github.com/angusyang91/portfolio/settings/pages
-2. Source: Branch `main`, Folder `/recipes/static`
+1. Go to https://github.com/angusyang91/recipegen/settings/pages
+2. Source: Branch `main`, Folder `/docs` (or root `/)
 3. Save
 
-Your app will be live at: `https://angusyang91.github.io/portfolio/recipes/static/`
+Your app will be live at: `https://angusyang91.github.io/recipegen/`
 
 ## Troubleshooting
 
 **Service won't start?**
 - Check logs in Render dashboard
-- Make sure Root Directory is set to `recipes`
-- Verify `ANTHROPIC_API_KEY` is set correctly
+- Make sure Root Directory is **blank** (app is at repository root)
+- Verify `WRITER_API_KEY` is set correctly
 
 **CORS errors?**
 - The app already has CORS enabled

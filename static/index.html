@@ -184,6 +184,11 @@
 
         .recipe-display {
             display: none;
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            margin-top: 2rem;
         }
 
         .recipe-display.active {
@@ -191,15 +196,50 @@
         }
 
         .recipe-header {
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 1.5rem;
             margin-bottom: 2rem;
+            position: relative;
         }
 
         .recipe-title {
             font-size: 2.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             color: var(--text-dark);
+            font-weight: 800;
+            padding-right: 200px;
+        }
+
+        .recipe-actions-top {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-save-image {
+            background: #0d9488;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .btn-save-image:hover:not(:disabled) {
+            background: #0f766e;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-save-image:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .recipe-meta {
@@ -255,74 +295,80 @@
             color: #9f1239;
         }
 
+        .recipe-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
         .recipe-section {
-            margin-bottom: 2.5rem;
+            margin-bottom: 0;
         }
 
         .section-title {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
             color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            font-weight: 700;
+            padding-bottom: 0.75rem;
+            border-bottom: 3px solid #f59e0b;
         }
 
         .ingredients-list {
             list-style: none;
-            background: var(--bg-light);
-            padding: 1.5rem;
-            border-radius: 8px;
+            padding: 0;
         }
 
         .ingredients-list li {
             padding: 0.75rem 0;
-            border-bottom: 1px solid var(--border-color);
-            padding-left: 2rem;
-            position: relative;
-        }
-
-        .ingredients-list li:last-child {
-            border-bottom: none;
+            color: var(--text-dark);
+            line-height: 1.6;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
         }
 
         .ingredients-list li::before {
             content: "✓";
-            position: absolute;
-            left: 0;
-            color: var(--success-color);
+            color: #f59e0b;
             font-weight: bold;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
         }
 
         .directions-list {
             list-style: none;
             counter-reset: step-counter;
+            padding: 0;
         }
 
         .directions-list li {
             counter-increment: step-counter;
-            padding: 1rem 0 1rem 3rem;
-            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 0;
+            padding-left: 4rem;
             position: relative;
-        }
-
-        .directions-list li:last-child {
-            border-bottom: none;
+            color: var(--text-dark);
+            line-height: 1.7;
+            margin-bottom: 1rem;
         }
 
         .directions-list li::before {
             content: counter(step-counter);
             position: absolute;
             left: 0;
-            top: 1rem;
-            background: var(--primary-color);
+            top: 1.25rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            background: #f59e0b;
             color: white;
-            width: 2rem;
-            height: 2rem;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
             font-weight: bold;
         }
 
@@ -356,6 +402,25 @@
             }
 
             .main-card {
+                padding: 1.5rem;
+            }
+
+            .recipe-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .recipe-title {
+                padding-right: 0;
+                margin-bottom: 3rem;
+            }
+
+            .recipe-actions-top {
+                position: static;
+                margin-top: 1.5rem;
+            }
+
+            .recipe-display {
                 padding: 1.5rem;
             }
         }
@@ -533,34 +598,27 @@
             <div id="recipeDisplay" class="recipe-display">
                 <div class="recipe-header">
                     <h2 id="recipeTitle" class="recipe-title"></h2>
-                    <div class="recipe-meta">
-                        <div class="meta-item" id="cookingTime"></div>
-                        <div class="meta-item" id="servings"></div>
+                    <div class="recipe-actions-top">
+                        <button id="saveImageBtn" class="btn-save-image">
+                            📸 Save as Image
+                        </button>
                     </div>
-                    <div class="tags" id="tagsContainer"></div>
                 </div>
 
-                <div class="recipe-section">
-                    <h3 class="section-title">📝 Ingredients</h3>
-                    <ul id="ingredientsList" class="ingredients-list"></ul>
-                </div>
+                <div class="recipe-content">
+                    <div class="recipe-section">
+                        <h3 class="section-title">Ingredients</h3>
+                        <ul id="ingredientsList" class="ingredients-list"></ul>
+                    </div>
 
-                <div class="recipe-section">
-                    <h3 class="section-title">👨‍🍳 Directions</h3>
-                    <ol id="directionsList" class="directions-list"></ol>
+                    <div class="recipe-section">
+                        <h3 class="section-title">Instructions</h3>
+                        <ol id="directionsList" class="directions-list"></ol>
+                    </div>
                 </div>
 
                 <div class="source-link">
                     <p>Source: <a id="sourceLink" href="#" target="_blank"></a></p>
-                </div>
-
-                <div class="recipe-actions">
-                    <button id="saveImageBtn" class="btn btn-secondary">
-                        📸 Save as Image
-                    </button>
-                    <button id="copyBtn" class="btn btn-secondary">
-                        📋 Copy Recipe
-                    </button>
                 </div>
             </div>
         </div>
@@ -923,7 +981,6 @@
 
         // Save as Image functionality
         const saveImageBtn = document.getElementById('saveImageBtn');
-        const copyBtn = document.getElementById('copyBtn');
 
         saveImageBtn.addEventListener('click', async () => {
             const recipeDisplay = document.getElementById('recipeDisplay');
@@ -969,35 +1026,6 @@
                 saveImageBtn.textContent = '📸 Save as Image';
                 saveImageBtn.disabled = false;
             }
-        });
-
-        // Copy recipe functionality
-        copyBtn.addEventListener('click', () => {
-            const recipeDisplay = document.getElementById('recipeDisplay');
-
-            if (!recipeDisplay.classList.contains('active')) {
-                showError('No recipe to copy. Please extract a recipe first.');
-                return;
-            }
-
-            const title = document.getElementById('recipeTitle').textContent;
-            const ingredients = Array.from(document.querySelectorAll('#ingredientsList li'))
-                .map(li => li.textContent).join('\n');
-            const directions = Array.from(document.querySelectorAll('#directionsList li'))
-                .map(li => li.textContent).join('\n');
-            const source = document.getElementById('sourceLink').href;
-
-            const recipeText = `${title}\n\nIngredients:\n${ingredients}\n\nDirections:\n${directions}\n\nSource: ${source}`;
-
-            navigator.clipboard.writeText(recipeText).then(() => {
-                copyBtn.textContent = '✅ Copied!';
-                setTimeout(() => {
-                    copyBtn.textContent = '📋 Copy Recipe';
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-                showError('Failed to copy recipe. Please try again.');
-            });
         });
     </script>
 </body>

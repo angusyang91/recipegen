@@ -359,6 +359,88 @@
                 padding: 1.5rem;
             }
         }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--bg-light);
+            padding: 0.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: transparent;
+            color: var(--text-light);
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: var(--primary-color);
+            box-shadow: var(--shadow);
+        }
+
+        .mode-btn:hover:not(.active) {
+            color: var(--primary-color);
+        }
+
+        /* Search Results */
+        .search-results {
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-result-item {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .search-result-item:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .search-result-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .search-result-site {
+            font-size: 0.875rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .search-result-snippet {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -369,25 +451,52 @@
         </div>
 
         <div class="main-card">
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <button id="urlModeBtn" class="mode-btn active">📎 Extract from URL</button>
+                <button id="searchModeBtn" class="mode-btn">🔍 Search Recipes</button>
+            </div>
+
             <div class="input-section">
-                <div class="input-group">
-                    <input 
-                        type="url" 
-                        id="recipeUrl" 
-                        class="url-input" 
-                        placeholder="Paste a recipe URL here (e.g., https://madewithlau.com/recipes/beef-chow-fun)"
-                    >
-                    <button id="extractBtn" class="btn btn-primary">
-                        Extract Recipe
-                    </button>
+                <!-- URL Mode -->
+                <div id="urlMode" class="mode-content">
+                    <div class="input-group">
+                        <input
+                            type="url"
+                            id="recipeUrl"
+                            class="url-input"
+                            placeholder="Paste a recipe URL here (e.g., https://madewithlau.com/recipes/beef-chow-fun)"
+                        >
+                        <button id="extractBtn" class="btn btn-primary">
+                            Extract Recipe
+                        </button>
+                    </div>
+
+                    <div class="example-urls">
+                        <span style="color: var(--text-light); font-size: 0.875rem; margin-right: 0.5rem;">Try:</span>
+                        <span class="example-url" data-url="https://madewithlau.com/recipes/beef-chow-fun">Made with Lau</span>
+                        <span class="example-url" data-url="https://www.seriouseats.com/the-best-chili-recipe">Serious Eats</span>
+                        <span class="example-url" data-url="https://thewoksoflife.com/chinese-broccoli-beef/">The Woks of Life</span>
+                        <span class="example-url" data-url="https://www.allrecipes.com/recipe/23600/worlds-best-lasagna/">AllRecipes</span>
+                    </div>
                 </div>
-                
-                <div class="example-urls">
-                    <span style="color: var(--text-light); font-size: 0.875rem; margin-right: 0.5rem;">Try:</span>
-                    <span class="example-url" data-url="https://madewithlau.com/recipes/beef-chow-fun">Made with Lau</span>
-                    <span class="example-url" data-url="https://www.seriouseats.com/the-best-chili-recipe">Serious Eats</span>
-                    <span class="example-url" data-url="https://thewoksoflife.com/chinese-broccoli-beef/">The Woks of Life</span>
-                    <span class="example-url" data-url="https://www.allrecipes.com/recipe/23600/worlds-best-lasagna/">AllRecipes</span>
+
+                <!-- Search Mode -->
+                <div id="searchMode" class="mode-content hidden">
+                    <div class="input-group">
+                        <input
+                            type="text"
+                            id="recipeSearch"
+                            class="url-input"
+                            placeholder="Search for recipes (e.g., chocolate chip cookies)"
+                        >
+                        <button id="searchBtn" class="btn btn-primary">
+                            Search
+                        </button>
+                    </div>
+
+                    <!-- Search Results -->
+                    <div id="searchResults" class="search-results"></div>
                 </div>
             </div>
 
@@ -444,9 +553,39 @@
 
         const recipeUrlInput = document.getElementById('recipeUrl');
         const extractBtn = document.getElementById('extractBtn');
+        const recipeSearchInput = document.getElementById('recipeSearch');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchResults = document.getElementById('searchResults');
         const loadingDiv = document.getElementById('loading');
         const errorMessage = document.getElementById('errorMessage');
         const recipeDisplay = document.getElementById('recipeDisplay');
+
+        // Mode toggle elements
+        const urlModeBtn = document.getElementById('urlModeBtn');
+        const searchModeBtn = document.getElementById('searchModeBtn');
+        const urlMode = document.getElementById('urlMode');
+        const searchMode = document.getElementById('searchMode');
+
+        // Mode toggle handlers
+        urlModeBtn.addEventListener('click', () => {
+            urlModeBtn.classList.add('active');
+            searchModeBtn.classList.remove('active');
+            urlMode.classList.remove('hidden');
+            searchMode.classList.add('hidden');
+            hideError();
+            recipeDisplay.classList.remove('active');
+            searchResults.classList.remove('active');
+        });
+
+        searchModeBtn.addEventListener('click', () => {
+            searchModeBtn.classList.add('active');
+            urlModeBtn.classList.remove('active');
+            searchMode.classList.remove('hidden');
+            urlMode.classList.add('hidden');
+            hideError();
+            recipeDisplay.classList.remove('active');
+            searchResults.classList.remove('active');
+        });
 
         // Example URL click handlers
         document.querySelectorAll('.example-url').forEach(btn => {
@@ -458,6 +597,16 @@
 
         // Extract button click handler
         extractBtn.addEventListener('click', extractRecipe);
+
+        // Search button click handler
+        searchBtn.addEventListener('click', searchRecipes);
+
+        // Enter key handlers
+        recipeSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchRecipes();
+            }
+        });
 
         // Enter key handler
         recipeUrlInput.addEventListener('keypress', (e) => {
@@ -538,6 +687,95 @@
                 loadingDiv.classList.remove('active');
                 extractBtn.disabled = false;
             }
+        }
+
+        async function searchRecipes() {
+            const query = recipeSearchInput.value.trim();
+
+            if (!query) {
+                showError('Please enter a search term');
+                return;
+            }
+
+            // Hide previous results and errors
+            hideError();
+            searchResults.classList.remove('active');
+            recipeDisplay.classList.remove('active');
+
+            // Show loading state
+            loadingDiv.classList.add('active');
+            searchBtn.disabled = true;
+
+            try {
+                console.log('🔍 Searching for recipes:', query);
+
+                const response = await fetch(`${API_BASE_URL}/api/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query, num_results: 5 })
+                });
+
+                console.log('✅ Search response received:', response.status);
+
+                const data = await response.json();
+                console.log('📥 Search results:', data);
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Search failed');
+                }
+
+                // Display search results
+                displaySearchResults(data.results);
+
+            } catch (error) {
+                console.error('Search error:', error);
+                let errorMessage = error.message || 'An error occurred while searching';
+
+                if (error.message && error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Unable to connect to the API. Please check your connection.';
+                }
+
+                showError(errorMessage);
+            } finally {
+                loadingDiv.classList.remove('active');
+                searchBtn.disabled = false;
+            }
+        }
+
+        function displaySearchResults(results) {
+            searchResults.innerHTML = '';
+
+            if (!results || results.length === 0) {
+                searchResults.innerHTML = '<p style="color: var(--text-light); text-align: center;">No results found. Try a different search term.</p>';
+                searchResults.classList.add('active');
+                return;
+            }
+
+            results.forEach(result => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'search-result-item';
+                resultDiv.innerHTML = `
+                    <div class="search-result-title">${result.title}</div>
+                    <div class="search-result-site">🌐 ${result.site}</div>
+                    <div class="search-result-snippet">${result.snippet}</div>
+                `;
+
+                resultDiv.addEventListener('click', () => {
+                    console.log('Selected recipe:', result.url);
+                    // Extract recipe from this URL
+                    recipeUrlInput.value = result.url;
+                    // Switch to URL mode
+                    urlModeBtn.click();
+                    // Extract the recipe
+                    extractRecipe();
+                });
+
+                searchResults.appendChild(resultDiv);
+            });
+
+            searchResults.classList.add('active');
         }
 
         function displayRecipe(recipe) {

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecipeSnap Backend Diagnostic</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+        }
+        .test {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #333;
+            background: #2a2a2a;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff4444; }
+        .warning { color: #ffaa00; }
+        .info { color: #00aaff; }
+        button {
+            padding: 10px 20px;
+            margin: 10px 0;
+            background: #00aa00;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #00ff00;
+            color: black;
+        }
+        pre {
+            background: #1a1a1a;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>RecipeSnap Backend Diagnostic Tool</h1>
+    <p class="info">This tool will help diagnose why your backend isn't responding.</p>
+
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="clearResults()">Clear Results</button>
+
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'https://recipe-app-myc9.onrender.com';
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        async function testHealthEndpoint() {
+            log('🔍 Testing health endpoint...', 'info');
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(`${API_URL}/api/health`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                const duration = Date.now() - startTime;
+                const data = await response.json();
+
+                if (response.ok) {
+                    log(`✅ Health check passed (${duration}ms)`, 'success');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+
+                    if (!data.extractor_ready) {
+                        log('⚠️ WARNING: Extractor not ready! Check WRITER_API_KEY in Render dashboard', 'warning');
+                    }
+                    return true;
+                } else {
+                    log(`❌ Health check failed with status ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                log(`❌ Health check failed (${duration}ms): ${error.message}`, 'error');
+
+                if (error.message.includes('CORS')) {
+                    log('💡 This is a CORS error. Backend needs to allow this origin.', 'warning');
+                }
+                return false;
+            }
+        }
+
+        async function testExtractEndpoint() {
+            log('🔍 Testing extract endpoint with sample recipe...', 'info');
+            const startTime = Date.now();
+
+            const testUrl = 'https://www.allrecipes.com/recipe/213742/moist-chocolate-cake/';
+
+            try {
+                const response = await fetch(`${API_URL}/api/extract`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: testUrl }),
+                    mode: 'cors'
+                });
+
+                const duration = Date.now() - startTime;
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    log(`✅ Extract test passed (${duration}ms)`, 'success');
+                    log(`Recipe: ${data.recipe?.name || 'Unknown'}`, 'success');
+                    return true;
+                } else {
+                    log(`❌ Extract test failed: ${data.error || 'Unknown error'}`, 'error');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                log(`❌ Extract test failed (${duration}ms): ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testCORS() {
+            log('🔍 Testing CORS configuration...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/api/test`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ CORS is configured correctly', 'success');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                    return true;
+                } else {
+                    log(`⚠️ CORS test returned status ${response.status}`, 'warning');
+                    return false;
+                }
+            } catch (error) {
+                log(`❌ CORS test failed: ${error.message}`, 'error');
+                if (error.message.includes('CORS')) {
+                    log('💡 Backend is not allowing requests from this origin', 'warning');
+                    log(`💡 Current origin: ${window.location.origin}`, 'warning');
+                    log(`💡 Check app.py CORS configuration`, 'warning');
+                }
+                return false;
+            }
+        }
+
+        async function checkBackendReachable() {
+            log('🔍 Checking if backend is reachable...', 'info');
+            const startTime = Date.now();
+
+            try {
+                // Use a simple HEAD request to check reachability
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    mode: 'no-cors' // This allows us to check if service is up
+                });
+
+                const duration = Date.now() - startTime;
+                log(`✅ Backend is reachable (${duration}ms)`, 'success');
+
+                if (duration > 10000) {
+                    log('⚠️ WARNING: Response took >10s. Service might be waking up from sleep.', 'warning');
+                    log('💡 TIP: Free Render services sleep after 15min inactivity. First request is slow.', 'info');
+                }
+
+                return true;
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                log(`❌ Backend unreachable (${duration}ms): ${error.message}`, 'error');
+                log('💡 TIP: Check if service is running in Render dashboard', 'warning');
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            log('🚀 Starting diagnostic tests...', 'info');
+            log(`Backend URL: ${API_URL}`, 'info');
+            log(`Current Page Origin: ${window.location.origin}`, 'info');
+            log('---', 'info');
+
+            // Test 1: Basic reachability
+            const reachable = await checkBackendReachable();
+            log('---', 'info');
+
+            if (!reachable) {
+                log('❌ Backend is not reachable. Check Render dashboard!', 'error');
+                return;
+            }
+
+            // Test 2: Health endpoint
+            log('⏳ Waiting 2 seconds before next test...', 'info');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const healthy = await testHealthEndpoint();
+            log('---', 'info');
+
+            if (!healthy) {
+                log('❌ Health check failed. Backend might not be starting correctly.', 'error');
+                log('💡 Check Render logs for startup errors', 'warning');
+            }
+
+            // Test 3: CORS
+            log('⏳ Waiting 2 seconds before next test...', 'info');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await testCORS();
+            log('---', 'info');
+
+            // Test 4: Extract endpoint (only if healthy)
+            if (healthy) {
+                log('⏳ Waiting 2 seconds before next test...', 'info');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                await testExtractEndpoint();
+                log('---', 'info');
+            }
+
+            log('✨ Diagnostic complete!', 'info');
+        }
+    </script>
+</body>
+</html>

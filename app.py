@@ -6,6 +6,7 @@ Provides REST API endpoints for recipe extraction
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from recipe_extractor import RecipeExtractor
+from recipe_searcher import RecipeSearcher
 import os
 from dotenv import load_dotenv
 
@@ -28,6 +29,13 @@ try:
 except ValueError as e:
     print(f"Warning: {e}")
     extractor = None
+
+# Initialize recipe searcher
+try:
+    searcher = RecipeSearcher()
+except ValueError as e:
+    print(f"Warning: {e}")
+    searcher = None
 
 
 @app.route('/')
@@ -105,13 +113,84 @@ def extract_recipe():
         }), 500
 
 
+@app.route('/api/search', methods=['POST'])
+def search_recipes():
+    """
+    Search for recipes
+
+    Request body:
+    {
+        "query": "chocolate chip cookies",
+        "num_results": 5  (optional, default 5)
+    }
+
+    Returns:
+    {
+        "success": true,
+        "results": [
+            {
+                "title": "Recipe Title",
+                "url": "https://...",
+                "snippet": "Description...",
+                "site": "example.com"
+            },
+            ...
+        ],
+        "error": null
+    }
+    """
+    if searcher is None:
+        return jsonify({
+            'success': False,
+            'error': 'Recipe searcher not initialized. Please check GOOGLE_API_KEY and GOOGLE_CSE_ID environment variables.',
+            'results': []
+        }), 500
+
+    try:
+        data = request.get_json()
+
+        if not data or 'query' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required field: query',
+                'results': []
+            }), 400
+
+        query = data['query'].strip()
+        num_results = data.get('num_results', 5)
+
+        if not query:
+            return jsonify({
+                'success': False,
+                'error': 'Query cannot be empty',
+                'results': []
+            }), 400
+
+        # Search for recipes
+        results = searcher.search_recipes(query, num_results=num_results)
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'error': None
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'results': []
+        }), 500
+
+
 @app.route('/api/test', methods=['GET'])
 def test_endpoint():
     """Test endpoint with sample data"""
     return jsonify({
         'success': True,
         'message': 'API is working!',
-        'extractor_ready': extractor is not None
+        'extractor_ready': extractor is not None,
+        'searcher_ready': searcher is not None
     })
 
 

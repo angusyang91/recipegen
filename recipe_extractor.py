@@ -19,14 +19,17 @@ class RecipeExtractor:
     def __init__(self, api_key=None):
         """
         Initialize the recipe extractor.
-        
+
         Args:
             api_key (str): Writer API key. If not provided, reads from WRITER_API_KEY env var.
         """
         self.api_key = api_key or os.getenv('WRITER_API_KEY')
         if not self.api_key:
             raise ValueError("Writer API key is required. Set WRITER_API_KEY environment variable.")
-        
+
+        # Debug logging
+        print(f"🔑 API key loaded: {self.api_key[:10]}...{self.api_key[-4:]} (length: {len(self.api_key)})")
+
         # Writer API endpoint
         self.api_url = "https://api.writer.com/v1/chat"
         self.model = "palmyra-x5"
@@ -166,18 +169,20 @@ IMPORTANT REQUIREMENTS:
         try:
             # Make API request to Writer's Palmyra X5
             headers = {
-                "x-api-key": self.api_key,
+                "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             }
-            
+
             payload = {
                 "model": self.model,
                 "messages": [
                     {"content": prompt, "role": "user"}
                 ]
             }
-            
+
             print(f"Using model: {self.model}")
+            print(f"📡 Making API request to: {self.api_url}")
+            print(f"🔑 Auth header: Bearer {self.api_key[:10]}...{self.api_key[-4:]}")
             response = requests.post(self.api_url, headers=headers, json=payload)
             
             # Handle API errors

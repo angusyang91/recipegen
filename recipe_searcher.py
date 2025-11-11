@@ -5,6 +5,8 @@ Searches for recipes using Google Custom Search API
 
 import os
 import requests
+import json
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -46,6 +48,11 @@ class RecipeSearcher:
             "cookieandkate.com"
         ]
 
+        # Simple in-memory cache with timestamps
+        # Format: {query: {'results': [...], 'timestamp': time}}
+        self._cache = {}
+        self._cache_duration = 3600  # Cache for 1 hour (3600 seconds)
+
     def search_recipes(self, query, num_results=5):
         """
         Search for recipes using Google Custom Search.
@@ -67,6 +74,20 @@ class RecipeSearcher:
             ]
         """
         print(f"🔍 Searching for recipes: {query}")
+
+        # Normalize query for cache key
+        cache_key = f"{query.lower().strip()}:{num_results}"
+
+        # Check cache first
+        if cache_key in self._cache:
+            cached_data = self._cache[cache_key]
+            # Check if cache is still valid (within 1 hour)
+            if time.time() - cached_data['timestamp'] < self._cache_duration:
+                print(f"✅ Returning cached results for '{query}'")
+                return cached_data['results']
+            else:
+                # Cache expired, remove it
+                del self._cache[cache_key]
 
         # Limit results to max 10
         num_results = min(num_results, 10)
@@ -115,6 +136,14 @@ class RecipeSearcher:
                     results.append(result)
 
             print(f"✓ Found {len(results)} recipe results")
+
+            # Cache the results
+            self._cache[cache_key] = {
+                'results': results,
+                'timestamp': time.time()
+            }
+            print(f"💾 Cached results for '{query}'")
+
             return results
 
         except Exception as e:

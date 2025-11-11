@@ -166,7 +166,7 @@ IMPORTANT REQUIREMENTS:
         try:
             # Make API request to Writer's Palmyra X5
             headers = {
-                "Authorization": f"Bearer {self.api_key}",
+                "x-api-key": self.api_key,
                 "Content-Type": "application/json"
             }
             

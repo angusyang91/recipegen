@@ -441,6 +441,29 @@
         .hidden {
             display: none !important;
         }
+
+        /* Action Buttons */
+        .recipe-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-dark);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
     </style>
 </head>
 <body>
@@ -530,12 +553,25 @@
                 <div class="source-link">
                     <p>Source: <a id="sourceLink" href="#" target="_blank"></a></p>
                 </div>
+
+                <div class="recipe-actions">
+                    <button id="saveImageBtn" class="btn btn-secondary">
+                        📸 Save as Image
+                    </button>
+                    <button id="copyBtn" class="btn btn-secondary">
+                        📋 Copy Recipe
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Load config if it exists (for GitHub Pages deployment) -->
     <script src="config.js" onerror="console.log('No config.js found, using default API URL')"></script>
+
+    <!-- html2canvas for image export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <script>
         // API Base URL - can be configured for different deployments
         // For local development: uses window.location.origin
@@ -884,6 +920,85 @@
         function hideError() {
             errorMessage.classList.remove('active');
         }
+
+        // Save as Image functionality
+        const saveImageBtn = document.getElementById('saveImageBtn');
+        const copyBtn = document.getElementById('copyBtn');
+
+        saveImageBtn.addEventListener('click', async () => {
+            const recipeDisplay = document.getElementById('recipeDisplay');
+
+            if (!recipeDisplay.classList.contains('active')) {
+                showError('No recipe to save. Please extract a recipe first.');
+                return;
+            }
+
+            saveImageBtn.disabled = true;
+            saveImageBtn.textContent = '⏳ Generating image...';
+
+            try {
+                // Use html2canvas to convert the recipe display to an image
+                const canvas = await html2canvas(recipeDisplay, {
+                    backgroundColor: '#ffffff',
+                    scale: 2, // Higher quality
+                    logging: false,
+                    useCORS: true
+                });
+
+                // Convert canvas to blob
+                canvas.toBlob((blob) => {
+                    // Create download link
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    const recipeName = document.getElementById('recipeTitle').textContent || 'recipe';
+                    const fileName = `${recipeName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+
+                    link.download = fileName;
+                    link.href = url;
+                    link.click();
+
+                    // Cleanup
+                    URL.revokeObjectURL(url);
+
+                    saveImageBtn.textContent = '📸 Save as Image';
+                    saveImageBtn.disabled = false;
+                });
+            } catch (error) {
+                console.error('Error generating image:', error);
+                showError('Failed to generate image. Please try again.');
+                saveImageBtn.textContent = '📸 Save as Image';
+                saveImageBtn.disabled = false;
+            }
+        });
+
+        // Copy recipe functionality
+        copyBtn.addEventListener('click', () => {
+            const recipeDisplay = document.getElementById('recipeDisplay');
+
+            if (!recipeDisplay.classList.contains('active')) {
+                showError('No recipe to copy. Please extract a recipe first.');
+                return;
+            }
+
+            const title = document.getElementById('recipeTitle').textContent;
+            const ingredients = Array.from(document.querySelectorAll('#ingredientsList li'))
+                .map(li => li.textContent).join('\n');
+            const directions = Array.from(document.querySelectorAll('#directionsList li'))
+                .map(li => li.textContent).join('\n');
+            const source = document.getElementById('sourceLink').href;
+
+            const recipeText = `${title}\n\nIngredients:\n${ingredients}\n\nDirections:\n${directions}\n\nSource: ${source}`;
+
+            navigator.clipboard.writeText(recipeText).then(() => {
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy Recipe';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showError('Failed to copy recipe. Please try again.');
+            });
+        });
     </script>
 </body>
 </html>
